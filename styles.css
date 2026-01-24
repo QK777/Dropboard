@@ -1,0 +1,293 @@
+/* =========================================================
+   Image Window Board v6
+   - 窓の中央に「小さな点線枠」ドロップ案内（背景はうっすらぼかし）
+   - 更新しても消えない：IndexedDB 自動保存/復元
+   - file:// でも動く（module未使用）
+   ========================================================= */
+
+:root{
+  --bg0: #0b1020;
+  --bg1: #101a33;
+  --border: rgba(180,205,255,0.18);
+  --text: rgba(240,248,255,0.92);
+  --muted: rgba(240,248,255,0.62);
+  --shadow: 0 12px 30px rgba(0,0,0,0.45);
+  --radius: 14px;
+  --header-h: 38px;
+}
+
+*{ box-sizing: border-box; }
+html,body{ height:100%; }
+
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
+  color: var(--text);
+  background: radial-gradient(1200px 600px at 20% 10%, rgba(120,170,255,0.22), transparent 60%),
+              radial-gradient(900px 500px at 80% 0%, rgba(130,255,210,0.14), transparent 60%),
+              linear-gradient(180deg, var(--bg1), var(--bg0));
+  overflow: hidden;
+}
+
+/* ---- full-screen drop guide (empty space drop) ---- */
+.drag-screen{
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9000;
+  background: rgba(8,10,18,0.22);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  pointer-events: none;
+}
+body.is-dragging-files .drag-screen{ display:flex; }
+
+.drag-screen__box{
+  width: min(420px, calc(100vw - 56px));
+  padding: 18px 18px 16px;
+  border-radius: 18px;
+  border: 2px dashed rgba(170,220,255,0.55);
+  background: rgba(20,26,45,0.45);
+  box-shadow: 0 16px 50px rgba(0,0,0,0.35);
+  text-align: center;
+}
+.drag-screen__title{
+  font-size: 15px;
+  font-weight: 950;
+  letter-spacing: 0.2px;
+}
+.drag-screen__sub{
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(240,248,255,0.80);
+  line-height: 1.35;
+}
+
+/* ---- toolbar ---- */
+.toolbar{
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(10,14,28,0.72);
+  border-bottom: 1px solid rgba(180,205,255,0.14);
+}
+
+.toolbar__left{
+  display:flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 240px;
+}
+
+.app-title{
+  font-weight: 850;
+  letter-spacing: 0.2px;
+  font-size: 14px;
+}
+
+.hint{
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.toolbar__right{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.btn{
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.08);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.2px;
+  cursor:pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.22);
+}
+
+.btn:hover{ background: rgba(255,255,255,0.11); }
+.btn:active{ transform: translateY(1px); }
+
+.btn--danger{
+  background: rgba(255,90,120,0.14);
+  border-color: rgba(255,140,160,0.35);
+}
+.btn--danger:hover{ background: rgba(255,90,120,0.18); }
+
+.main{ height: calc(100vh - 58px); }
+
+.stage{
+  height: 100%;
+  position: relative;
+  overflow: auto;
+  padding: 16px;
+  min-width: 100%;
+  min-height: 100%;
+}
+
+/* ---- windows ---- */
+.win{
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 420px;
+  height: 320px;
+  min-width: 240px;
+  min-height: calc(var(--header-h) + 120px);
+  border-radius: var(--radius);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(180,205,255,0.16);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.win:focus{
+  outline: 2px solid rgba(120,170,255,0.35);
+  outline-offset: 2px;
+}
+
+.win__header{
+  height: var(--header-h);
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 10px 0 12px;
+  border-bottom: 1px solid rgba(180,205,255,0.12);
+  background: rgba(255,255,255,0.07);
+}
+
+.is-edit .win__header{ cursor: grab; }
+.is-edit .win__header:active{ cursor: grabbing; }
+
+.win__title{
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0.2px;
+  color: rgba(240,248,255,0.92);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+.win__actions{
+  display:flex;
+  align-items:center;
+  gap: 6px;
+}
+
+.icon-btn{
+  border: 1px solid rgba(180,205,255,0.18);
+  background: rgba(255,255,255,0.08);
+  color: var(--text);
+  width: 56px;
+  height: 26px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor:pointer;
+  user-select:none;
+}
+.icon-btn:hover{ background: rgba(255,255,255,0.11); }
+
+.icon-btn--danger{
+  width: 30px;
+  background: rgba(255,90,120,0.14);
+  border-color: rgba(255,140,160,0.35);
+}
+.icon-btn--danger:hover{ background: rgba(255,90,120,0.18); }
+
+.win__body{
+  position: relative;
+  flex: 1;
+  background: rgba(0,0,0,0.10);
+}
+
+.win__img{
+  width: 100%;
+  height: 100%;
+  display:block;
+  object-fit: contain;
+  transform-origin: center;
+  pointer-events: none; /* ドロップ対象を窓全体に寄せる */
+}
+
+/* 編集モードONのときだけリサイズ可能 */
+.is-edit .win{ resize: both; }
+
+/* 折りたたみ状態：見た目上タイトルバーのみ */
+.win.is-collapsed{
+  resize: none !important;
+  min-height: var(--header-h) !important;
+  height: var(--header-h) !important;
+}
+.win.is-collapsed .win__body{ display: none; }
+.win.is-collapsed .win__header{ border-bottom: none; }
+
+/* 編集モードOFF：移動/リサイズを止める */
+body:not(.is-edit) .win{ resize: none; }
+body:not(.is-edit) .win__header{ cursor: default; }
+
+.win.is-dragging{ opacity: 0.92; }
+
+/* ---- per-window drop overlay (small center box) ---- */
+.drop-overlay{
+  position:absolute;
+  inset: 0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: rgba(8,10,18,0.12);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.drop-box{
+  width: min(320px, calc(100% - 36px));
+  padding: 16px 16px 14px;
+  border-radius: 18px;
+  border: 2px dashed rgba(170,220,255,0.58);
+  background: rgba(20,26,45,0.48);
+  box-shadow: 0 16px 50px rgba(0,0,0,0.32);
+  text-align: center;
+}
+
+.drop-box__title{
+  font-size: 14px;
+  font-weight: 950;
+  letter-spacing: 0.2px;
+  color: rgba(240,248,255,0.92);
+}
+.drop-box__sub{
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(240,248,255,0.80);
+  line-height: 1.35;
+}
+
+/* show only when this window is actual drop target */
+.win.is-drop-target .drop-overlay{ opacity: 1; }

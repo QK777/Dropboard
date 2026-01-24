@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Image Window Board</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="is-edit">
+  <!-- 画面全体のドロップガイド（空きスペースに落とすとき用 / ドラッグ中だけ表示） -->
+  <div class="drag-screen" aria-hidden="true">
+    <div class="drag-screen__box">
+      <div class="drag-screen__title">画像をドロップして追加</div>
+      <div class="drag-screen__sub">窓の上 → 置換 / 空きスペース → 新規作成</div>
+    </div>
+  </div>
+
+  <header class="toolbar" role="banner">
+    <div class="toolbar__left">
+      <div class="app-title">Image Window Board</div>
+      <div class="hint">画像を「窓」で自由配置（ドラッグ移動 / 右下リサイズ / ドロップで追加・置換）</div>
+    </div>
+
+    <div class="toolbar__right">
+      <label class="btn">
+        画像追加
+        <input id="fileInput" type="file" accept="image/*,.heic,.heif,.webp,.avif" multiple hidden />
+      </label>
+
+      <button id="toggleEditBtn" class="btn" type="button" aria-pressed="true">
+        編集モード: ON
+      </button>
+
+      <button id="saveBtn" class="btn" type="button">JSON保存</button>
+
+      <label class="btn">
+        JSON読込
+        <input id="loadInput" type="file" accept="application/json,.json" hidden />
+      </label>
+
+      <button id="clearBtn" class="btn btn--danger" type="button">全消去</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div id="stage" class="stage" aria-label="ステージ"></div>
+  </main>
+
+  <template id="winTpl">
+    <section class="win" tabindex="0">
+      <div class="win__header">
+        <div class="win__title"></div>
+        <div class="win__actions">
+          <button class="icon-btn" type="button" data-act="collapse" title="折りたたみ">非表示</button>
+          <button class="icon-btn icon-btn--danger" type="button" data-act="delete" title="削除">×</button>
+        </div>
+      </div>
+
+      <div class="win__body">
+        <img class="win__img" alt="" />
+
+        <!-- ★ 窓の中央に出る「小さな点線枠」 -->
+        <div class="drop-overlay" aria-hidden="true">
+          <div class="drop-box">
+            <div class="drop-box__title">画像をドロップして置換</div>
+            <div class="drop-box__sub">この窓の画像が入れ替わります</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </template>
+
+  <!-- HEIC/HEIF 変換ライブラリ（オンライン依存） -->
+  <script src="https://cdn.jsdelivr.net/npm/heic2any/dist/heic2any.min.js"></script>
+
+  <!-- file:// でも動くように module を使わない -->
+  <script src="./app.js"></script>
+</body>
+</html>
